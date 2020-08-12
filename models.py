@@ -36,8 +36,10 @@ class Meal(db.Model):
     price = db.Column(db.Float, nullable=False)
     description = db.Column(db.String(255), nullable=False)
     picture = db.Column(db.String(255), nullable=False)
-
+    
+    category_id = db.Column(db.Integer, db.ForeignKey("categories.id"), nullable=False)
     category = db.relationship('Category')
+    
     orders = db.relationship('Order',
                              secondary=orders_meals,
                              back_populates='meals'

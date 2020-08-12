@@ -11,16 +11,16 @@ def import_csv():
     with open('delivery_categories.csv', encoding='utf-8') as f:
         cat = list(csv.reader(f, delimiter=','))
         for row in cat:
-            if row[1] != 'title':
-                continue
-            cat = Category(title=row[1])
-            db.session.add(cat)
-
+            if row[1] != 'title':    
+                cat = Category(id=row[0], title=row[1])
+                db.session.add(cat)
+    db.session.commit()
     with open('delivery_items.csv', encoding='utf-8') as f:
         table = csv.reader(f, delimiter=',')
         for row in table:
             if row[0] != 'id':
-                item = Meal(title=row[1],
+                item = Meal(id=row[0],
+                            title=row[1],
                             price=row[2],
                             description=row[3],
                             picture=row[4],

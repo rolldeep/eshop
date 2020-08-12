@@ -63,6 +63,8 @@ class Order(db.Model):
     order_sum = db.Column(db.Float, nullable=False)
     status = db.Column(db.String(255), nullable=False)
 
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    user = db.relationship('User')
     meals = db.relationship('Meal',
                             secondary=orders_meals,
                             back_populates='orders'

@@ -1,4 +1,5 @@
-from flask import Flask, render_template, session
+from typing import List
+from flask import Flask, render_template, session, redirect
 from flask_migrate import Migrate
 from models import Category, db, Meal
 from config import Config
@@ -8,6 +9,7 @@ db.init_app(app)
 migrate = Migrate(app, db)
 app.config.from_object(Config)
 
+
 @app.route('/')
 def main():
     menu = dict()
@@ -15,19 +17,48 @@ def main():
 
     for category in categories:
         items = list()
-        for meal in category.orders:
+        for meal in category.meals:
             items.append(meal)
-        menu[category] = items
-
-    cart = session.get("cart", [])
-    # cart.append(item_id)
+        menu[category.title] = items
 
     return render_template('main.html', menu=menu)
 
 
 @app.route('/cart/')
 def show_cart():
-    return render_template('cart.html')
+    items = session.get("cart", [])
+    order_summ = 0
+    order = list()
+    meals = [db.session.
+             query(Meal).
+             get(int(item))
+             for item in items]
+    for meal in meals:
+        d = {'title': meal.title,
+             'price': meal.price,
+             'meal_id': meal.id
+             }
+        order.append(d)
+        order_summ += meal.price
+    return render_template('cart.html',
+                           meals=order,
+                           order_summ=order_summ)
+
+
+@app.route('/addtocart/<item_id>')
+def add_item(item_id):
+    cart = session.get("cart", [])
+    cart.append(item_id)
+    session["cart"] = cart
+    return redirect('/')
+
+
+@app.route('/removeitem/<item_id>')
+def remove_item(item_id):
+    cart = session.get("cart", [])
+    cart.remove(item_id)
+    session["cart"] = cart
+    return redirect('/cart/')
 
 
 @app.route('/account/')
@@ -46,23 +77,4 @@ def logout():
 
 
 if __name__ == "__main__":
-    from data.importer import read_csv
-
-    data = read_csv()
-
-    for row in data['categories']:
-        if row[1] != 'title':
-            continue
-        cat = Category(title=row[1])
-        db.session.add(cat)
-    db.session.commit()
-
-    for row in data['items']:
-        cat = db.session.query(Category).get(int(row[0]))
-        item = Meal(title=row[1],
-                    price=row[2],
-                    description=row[3],
-                    picture=row[4],
-                    category=cat)
-    db.session.commit()
     app.run(debug=True)

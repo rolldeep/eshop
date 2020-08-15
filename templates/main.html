@@ -64,7 +64,7 @@
             <div class="card-body">
               <h4 class="h5 card-title">{{ meal['title'] }}</h4>
               <p class="card-text">{{ meal['description'] }}</p>
-              <a href="/addtocart1/" class="btn btn-danger">В корзину</a>
+              <a href="{{ url_for('add_item', item_id=meal['id']) }}" class="btn btn-danger">В корзину</a>
             </div>
           </div>
         </div>

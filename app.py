@@ -1,7 +1,7 @@
 from typing import List
 from flask import Flask, render_template, session, redirect, request
 from flask_migrate import Migrate
-from models import Category, db, Meal
+from models import Category, db, Meal, User
 from config import Config
 from forms import OrderForm, AuthForm
 
@@ -84,13 +84,20 @@ def remove_item(item_id):
     return redirect('/cart/')
 
 
-@app.route('/auth/')
+@app.route('/auth/', methods=['GET', 'POST'])
 def auth():
     form = AuthForm()
-    return render_template('auth.html', form=form)
+    if request.method == 'GET':
+        return render_template('auth.html', form=form)
+    elif request.method == 'POST':
+        user = User.query.filter_by(email=form.email).first()
+        if user and user.password_valid(form.password):
+            session["user_id"] = user.id
+            session["email"] = user.email
+            return redirect('/account/')
 
 
-@app.route('/account/')
+@app.route('/account/', methods=['GET', 'POST'])
 def show_account():
     return render_template('account.html')
 

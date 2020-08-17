@@ -14,7 +14,7 @@
   <main class="container">
     <div class="row">
       <div class="col-8 col-lg-4 offset-2 offset-lg-4">
-        <form class="form-signin pt-5">
+        <form class="form-signin pt-5" action="/auth/" method="POST">
           {% if form.errors %}
           <ul class="errors">
             {% for field_name, field_errors in form.errors|dictsort if field_errors %}
@@ -33,17 +33,15 @@
             <p class="h5 font-weight-light">Войдите, чтобы управлять</p>
           </div>
           <div class="mt-5 form-label-group">
-            <p class="text-muted">Электропочта</p>
-            <input type="email" id="inputEmail" class="form-control" required autofocus>
-            <label for="inputEmail"></label>
+            <p class="text-muted">{{ form.email.label(class="text-muted")}}</p>
+            {{ form.email(class="form-control", autofocus=true) }}
           </div>
           <div class="form-label-group">
-            <p class="text-muted"> Пароль</p>
-            <input type="password" id="inputPassword" class="form-control" required>
-            <label for="inputPassword"></label>
+            <p class="text-muted"> {{ form.password.label(class="text-muted")}}</p>
+            {{ form.password(class="form-control", autofocus=true) }}
           </div>
           <div class="checkbox mb-3"></div>
-          <button class="btn btn-lg btn-danger btn-block" type="submit">Войти</button>
+          <input type="submit" class="btn btn-lg btn-danger btn-block" value="Войти">
         </form>
       </div>
     </div>

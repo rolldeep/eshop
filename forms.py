@@ -26,4 +26,4 @@ class AuthForm(FlaskForm):
                         [Email(message='Введите валидный адрес'),
                          InputRequired(message='Обязательное поле.')])
     password = PasswordField('Пароль',
-                             [InputRequired(name='Введите Пароль')])
+                             [InputRequired(message='Введите Пароль')])

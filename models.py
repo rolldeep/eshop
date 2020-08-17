@@ -1,5 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
-
+from werkzeug import generate_password_hash, check_password_hash
 
 db = SQLAlchemy()
 
@@ -22,11 +22,21 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), nullable=False)
     email = db.Column(db.String(255), nullable=False)
-    password = db.Column(db.String(1000), nullable=False)
+    password_hash = db.Column(db.String(1000), nullable=False)
     address = db.Column(db.String(1000), nullable=False)
 
     orders = db.relationship('Order')
 
+    @property
+    def password(self):
+        raise AttributeError("Неьзя возвращать пароль")
+
+    @password.setter
+    def password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def password_valid(self, password):
+        return check_password_hash(self.password_hash, password)
 
 class Meal(db.Model):
     __tablename__ = 'meals'

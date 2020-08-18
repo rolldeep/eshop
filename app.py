@@ -3,7 +3,7 @@ from flask import Flask, render_template, session, redirect, request
 from flask_migrate import Migrate
 from models import Category, db, Meal, User
 from config import Config
-from forms import OrderForm, AuthForm
+from forms import OrderForm, AuthForm, RegisterForm
 
 app = Flask(__name__)
 db.init_app(app)
@@ -87,14 +87,22 @@ def remove_item(item_id):
 @app.route('/auth/', methods=['GET', 'POST'])
 def auth():
     form = AuthForm()
+    is_correct = False
     if request.method == 'GET':
-        return render_template('auth.html', form=form)
+        return render_template('auth.html',
+                               form=form,
+                               is_correct=is_correct)
     elif request.method == 'POST':
         user = User.query.filter_by(email=form.email).first()
         if user and user.password_valid(form.password):
             session["user_id"] = user.id
             session["email"] = user.email
             return redirect('/account/')
+        else:
+            is_correct = False
+            return render_template('auth.html',
+                                   form=form,
+                                   is_correct=is_correct)
 
 
 @app.route('/account/', methods=['GET', 'POST'])
@@ -115,6 +123,23 @@ def login():
 @app.route('/logout/')
 def logout():
     return render_template('login.html')
+
+
+@app.route('/register/', methods=['GET', 'POST'])
+def register():
+    form = RegisterForm()
+    if request.method == 'GET':
+        return render_template('register.html', form=form)
+    elif request.method == 'POST':
+        if form.validate_on_submit():
+            password = form.password.data
+            email = form.email.data
+            user = User(email=email)
+            user.password = password
+            db.session.add(user)
+            db.session.commit()
+            session["email"] = email
+            return redirect('/account/')
 
 
 if __name__ == "__main__":

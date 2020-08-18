@@ -1,6 +1,17 @@
+import re
+
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField
-from wtforms.validators import InputRequired, Length, Email
+from wtforms import PasswordField, StringField
+from wtforms.validators import Email, InputRequired, Length, ValidationError
+
+
+def password_check(form, field):
+    msg = 'Пароль должен содержать латинские буквы в верхнем и нижнем регистре и цифры.'
+    pattern1 = re.compile('[a-zA-Z]+')
+    pattern2 = re.compile('\\d+')
+    if (not pattern1.search(field.data) or
+            not pattern2.search(field.data)):
+        raise ValidationError(msg)
 
 
 class OrderForm(FlaskForm):
@@ -26,4 +37,17 @@ class AuthForm(FlaskForm):
                         [Email(message='Введите валидный адрес'),
                          InputRequired(message='Обязательное поле.')])
     password = PasswordField('Пароль',
-                             [InputRequired(message='Введите Пароль')])
+                             [InputRequired(message='Введите Пароль'),
+                              Length(min=8,
+                                     message="Пароль должен быть не менее 8 символов")])
+
+
+class RegisterForm(FlaskForm):
+    email = StringField('Элекстронная почта',
+                        [Email(message='Введите валидный адрес'),
+                         InputRequired(message='Обязательное поле.')])
+    password = PasswordField('Пароль',
+                             [InputRequired(message='Введите Пароль'),
+                              Length(min=8,
+                                     message="Пароль должен быть не менее 8 символов"),
+                              password_check])

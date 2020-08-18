@@ -1,5 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
-from werkzeug import generate_password_hash, check_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
 
 db = SQLAlchemy()
 
@@ -20,10 +20,10 @@ class User(db.Model):
     __tablename__ = 'users'
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(255), nullable=False)
+    name = db.Column(db.String(255))
     email = db.Column(db.String(255), nullable=False)
     password_hash = db.Column(db.String(1000), nullable=False)
-    address = db.Column(db.String(1000), nullable=False)
+    address = db.Column(db.String(1000))
 
     orders = db.relationship('Order')
 
@@ -38,6 +38,7 @@ class User(db.Model):
     def password_valid(self, password):
         return check_password_hash(self.password_hash, password)
 
+
 class Meal(db.Model):
     __tablename__ = 'meals'
 
@@ -46,10 +47,11 @@ class Meal(db.Model):
     price = db.Column(db.Float, nullable=False)
     description = db.Column(db.String(255), nullable=False)
     picture = db.Column(db.String(255), nullable=False)
-    
-    category_id = db.Column(db.Integer, db.ForeignKey("categories.id"), nullable=False)
+
+    category_id = db.Column(db.Integer, db.ForeignKey(
+        "categories.id"), nullable=False)
     category = db.relationship('Category')
-    
+
     orders = db.relationship('Order',
                              secondary=orders_meals,
                              back_populates='meals'

@@ -32,7 +32,7 @@ class OrderForm(FlaskForm):
                                 message='Невалидный номер')])
 
 
-class AuthForm(FlaskForm):
+class LoginForm(FlaskForm):
     email = StringField('Элекстронная почта',
                         [Email(message='Введите валидный адрес'),
                          InputRequired(message='Обязательное поле.')])

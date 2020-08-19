@@ -1,9 +1,11 @@
 from typing import List
-from flask import Flask, render_template, session, redirect, request
+
+from flask import Flask, redirect, render_template, request, session
 from flask_migrate import Migrate
-from models import Category, db, Meal, User
+
 from config import Config
-from forms import OrderForm, AuthForm, RegisterForm
+from forms import LoginForm, OrderForm, RegisterForm
+from models import Category, Meal, User, db
 
 app = Flask(__name__)
 db.init_app(app)
@@ -22,7 +24,9 @@ def main():
             items.append(meal)
         menu[category.title] = items
 
-    return render_template('main.html', menu=menu)
+    return render_template('main.html',
+                           menu=menu,
+                           is_auth=session.get("is_auth", False))
 
 
 @app.route('/cart/', methods=['GET', 'POST'])
@@ -30,7 +34,7 @@ def show_cart():
     form = OrderForm()
     items = session.get("cart", [])
     is_removed = session.get("is_removed", False)
-    is_logged = session.get("is_logged", False)
+    is_auth = session.get("is_auth", False)
     session['is_removed'] = False
     order = list()
     order_summ = 0
@@ -52,10 +56,18 @@ def show_cart():
                                order_summ=order_summ,
                                form=form,
                                is_removed=is_removed,
-                               is_logged=is_logged)
+                               is_auth=is_auth)
     if request.method == 'POST':
         if form.validate_on_submit():
-            return redirect('/ordered/')
+            session['email'] = form.email.data
+            session['name'] = form.name.data
+            session['address'] = form.address.data
+            session['phone'] = form.phone.data
+            user = User.query.filter_by(email=session['email']).first()
+            if user:
+                return redirect('/auth/')
+            else:
+                return redirect('/register/')
         else:
             return render_template('cart.html',
                                    meals_ids=items,
@@ -63,7 +75,7 @@ def show_cart():
                                    order_summ=order_summ,
                                    form=form,
                                    is_removed=is_removed,
-                                   is_logged=is_logged)
+                                   is_auth=is_auth)
 
 
 @app.route('/addtocart/<item_id>')
@@ -71,7 +83,7 @@ def add_item(item_id):
     cart = session.get("cart", [])
     cart.append(item_id)
     session["cart"] = cart
-    return redirect('/')
+    return redirect('/cart/')
 
 
 @app.route('/removeitem/<item_id>')
@@ -84,30 +96,16 @@ def remove_item(item_id):
     return redirect('/cart/')
 
 
-@app.route('/auth/', methods=['GET', 'POST'])
-def auth():
-    form = AuthForm()
-    is_correct = False
-    if request.method == 'GET':
-        return render_template('auth.html',
-                               form=form,
-                               is_correct=is_correct)
-    elif request.method == 'POST':
-        user = User.query.filter_by(email=form.email).first()
-        if user and user.password_valid(form.password):
-            session["user_id"] = user.id
-            session["email"] = user.email
-            return redirect('/account/')
-        else:
-            is_correct = False
-            return render_template('auth.html',
-                                   form=form,
-                                   is_correct=is_correct)
-
-
 @app.route('/account/', methods=['GET', 'POST'])
 def show_account():
-    return render_template('account.html')
+    if session.get('name'):
+        user = User.query.filter_by(email=session['email'])
+        user.name = session['name']
+        user.address = session['address']
+        user.phone = session['phone']
+        db.session.commit()
+    return render_template('account.html',
+                           is_auth=session.get("is_auth", False))
 
 
 @app.route('/ordered/')
@@ -115,31 +113,56 @@ def on_success():
     return render_template('ordered.html')
 
 
-@app.route('/login/')
+@app.route('/login/', methods=['GET', 'POST'])
 def login():
-    return render_template('login.html')
+    form = LoginForm()
+    is_correct = True
 
+    if session.get("is_auth"):
+        return redirect('/account/')
 
-@app.route('/logout/')
-def logout():
-    return render_template('login.html')
+    elif request.method == 'POST':
+        user = User.query.filter_by(email=form.email.data).first()
+        if user and user.password_valid(form.password.data):
+            session["user_id"] = user.id
+            session["email"] = user.email
+            session["is_auth"] = True
+            return redirect('/account/')
+
+        else:
+            is_correct = False
+    return render_template('login.html',
+                           form=form,
+                           is_auth=False,
+                           is_correct=is_correct)
 
 
 @app.route('/register/', methods=['GET', 'POST'])
 def register():
     form = RegisterForm()
-    if request.method == 'GET':
-        return render_template('register.html', form=form)
-    elif request.method == 'POST':
+    if request.method == 'POST':
         if form.validate_on_submit():
+            # Reieving data
             password = form.password.data
             email = form.email.data
+
+            # Resistering
             user = User(email=email)
             user.password = password
             db.session.add(user)
             db.session.commit()
+
+            # Authorizing
             session["email"] = email
+            session["is_auth"] = True
             return redirect('/account/')
+    return render_template('register.html', form=form)
+
+
+@app.route('/logout/')
+def logout():
+    session.clear()
+    return redirect('/login/')
 
 
 if __name__ == "__main__":

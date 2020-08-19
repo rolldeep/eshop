@@ -14,7 +14,7 @@
   <main class="container">
     <div class="row">
       <div class="col-8 col-lg-4 offset-2 offset-lg-4">
-        <form class="form-signin pt-5" action="/auth/" method="POST">
+        <form class="form-signin pt-5" action="/login/" method="POST">
           {% if form.errors %}
           <ul class="errors">
             {% for field_name, field_errors in form.errors|dictsort if field_errors %}
@@ -25,7 +25,7 @@
           </ul>
           {% endif %}
           {{ form.csrf_token }}
-          {% if is_correct %}
+          {% if !is_correct %}
           <div class="alert alert-warning" role="alert">Неверный логин или пароль</div>
           {% endif %}
           <div class="text-center mt-5 b-1">

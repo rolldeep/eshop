@@ -46,9 +46,9 @@
     {% if is_removed %}
     <div class="alert alert-warning" role="alert">Блюдо удалено из корзины</div>
     {% endif %}
-    {% if not is_logged %}
-    <div class="alert alert-warning" role="alert">Чтобы сделать заказ – <a href="/login.html">войдите</a> или <a
-        href="/register.html">зарегистрируйтесь</a></div>
+    {% if not is_auth %}
+    <div class="alert alert-warning" role="alert">Чтобы сделать заказ – <a href="{{ url_for('login') }}">войдите</a> или <a
+        href="{{ url_for('register') }}">зарегистрируйтесь</a></div>
     {% endif %}
     <div class="row mt-5">
 

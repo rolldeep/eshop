@@ -63,9 +63,11 @@ def show_cart():
             session['name'] = form.name.data
             session['address'] = form.address.data
             session['phone'] = form.phone.data
+            session['order_summ'] = request.form['order_summ']
+            session['order_cart'] = request.form['order_cart']
             user = User.query.filter_by(email=session['email']).first()
             if user:
-                return redirect('/auth/')
+                return redirect('/login/')
             else:
                 return redirect('/register/')
         else:
@@ -103,6 +105,12 @@ def show_account():
         user.name = session['name']
         user.address = session['address']
         user.phone = session['phone']
+        
+        # Making order
+        meals = List[Meal]
+        for meal_id in session['meals_ids']:
+            meal = Meal.query.get(meal_id)
+            meals.append(meal)
         db.session.commit()
     return render_template('account.html',
                            is_auth=session.get("is_auth", False))
@@ -142,11 +150,11 @@ def register():
     form = RegisterForm()
     if request.method == 'POST':
         if form.validate_on_submit():
-            # Reieving data
+            # Recieving data
             password = form.password.data
             email = form.email.data
 
-            # Resistering
+            # Registering user
             user = User(email=email)
             user.password = password
             db.session.add(user)

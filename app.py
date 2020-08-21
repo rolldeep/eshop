@@ -1,11 +1,12 @@
-from typing import List
+from datetime import datetime
+from typing import List, Any, Dict
 
 from flask import Flask, redirect, render_template, request, session
 from flask_migrate import Migrate
 
 from config import Config
 from forms import LoginForm, OrderForm, RegisterForm
-from models import Category, Meal, User, db
+from models import Category, Meal, User, db, Order
 
 app = Flask(__name__)
 db.init_app(app)
@@ -36,35 +37,40 @@ def show_cart():
     is_removed = session.get("is_removed", False)
     is_auth = session.get("is_auth", False)
     session['is_removed'] = False
-    order = list()
-    order_summ = 0
-    meals = [db.session.
-             query(Meal).
-             get(int(item))
-             for item in items]
-    for meal in meals:
-        d = {'title': meal.title,
-             'price': meal.price,
-             'meal_id': meal.id
-             }
-        order.append(d)
-        order_summ += meal.price
+    order: List[dict]
+    order_sum = 0
+
     if request.method == 'GET':
+        meals = [db.session.
+                 query(Meal).
+                 get(int(item))
+                 for item in items]
+        for meal in meals:
+            meals_ids = session.get("meals_ids", [])
+            d = {'title': meal.title,
+                 'price': meal.price,
+                 'meal_id': meal.id
+                 }
+            meals_ids.append(meal.id)
+            session["meals_ids"] = meals_ids
+            order.append(d)
+            order_sum += meal.price
+        session['order_sum'] = order_sum
         return render_template('cart.html',
                                meals_ids=items,
                                meals=order,
-                               order_summ=order_summ,
+                               order_sum=order_sum,
                                form=form,
                                is_removed=is_removed,
                                is_auth=is_auth)
+
     if request.method == 'POST':
         if form.validate_on_submit():
             session['email'] = form.email.data
             session['name'] = form.name.data
             session['address'] = form.address.data
             session['phone'] = form.phone.data
-            session['order_summ'] = request.form['order_summ']
-            session['order_cart'] = request.form['order_cart']
+            session['order_sum'] = request.form['order_sum']
             user = User.query.filter_by(email=session['email']).first()
             if user:
                 return redirect('/login/')
@@ -74,7 +80,7 @@ def show_cart():
             return render_template('cart.html',
                                    meals_ids=items,
                                    meals=order,
-                                   order_summ=order_summ,
+                                   order_sum=order_sum,
                                    form=form,
                                    is_removed=is_removed,
                                    is_auth=is_auth)
@@ -105,15 +111,42 @@ def show_account():
         user.name = session['name']
         user.address = session['address']
         user.phone = session['phone']
-        
-        # Making order
-        meals = List[Meal]
-        for meal_id in session['meals_ids']:
-            meal = Meal.query.get(meal_id)
-            meals.append(meal)
+
+        meals_ids: List[str] = session.get("meals_ids", [])
+        meals: List[Meal]
+        order_date: str = datetime.now().strftime('%Y-%m-%d')
+
+        # Forming the order list
+        meals = [Meal.query.get(int(meal_id))
+                 for meal_id in meals_ids]
+
+        order = Order(order_date=order_date,
+                      order_sum=session['order_sum'],
+                      user_id=user.id,
+                      user=user,
+                      meals=meals)
         db.session.commit()
+
+    orders_list: List[Dict[str, Any]]
+    orders = Order.query.all()
+    for o in orders:
+        meals_dict: List[Dict[str, Any]] = [
+            {
+                'title': meal.title,
+                'price': meal.price,
+            }
+            for meal in order.meals
+        ]
+        order_item: Dict[str, Any] = {
+            'order_date': o.order_date,
+            'order_sum': o.order_sum,
+            'meals': meals_dict,
+        }
+        orders_list.append(order_item)
     return render_template('account.html',
-                           is_auth=session.get("is_auth", False))
+                           is_auth=session.get("is_auth", False),
+                           order_sum=session.get("order_sum", 0),
+                           orders=orders_list)
 
 
 @app.route('/ordered/')

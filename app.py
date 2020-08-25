@@ -37,7 +37,7 @@ def show_cart():
     is_removed = session.get("is_removed", False)
     is_auth = session.get("is_auth", False)
     session['is_removed'] = False
-    order: List[dict]
+    order: List[dict] = []
     order_sum = 0
 
     if request.method == 'GET':
@@ -125,6 +125,7 @@ def show_account():
                       user_id=user.id,
                       user=user,
                       meals=meals)
+        db.session.add(order)
         db.session.commit()
 
     orders_list: List[Dict[str, Any]]

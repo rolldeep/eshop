@@ -36,25 +36,31 @@ def show_cart():
     items = session.get("cart", [])
     is_removed = session.get("is_removed", False)
     is_auth = session.get("is_auth", False)
+    
+    # show message if item is removed
     session['is_removed'] = False
+    
+    # Orders to show
     order: List[dict] = []
     order_sum = 0
+    
+    # Getting the meals from db
+    meals = [db.session.
+                    query(Meal).
+                    get(int(item))
+                    for item in items]
+    for meal in meals:
+        meals_ids = session.get("meals_ids", [])
+        d = {'title': meal.title,
+                'price': meal.price,
+                'meal_id': meal.id
+                }
+        meals_ids.append(meal.id)
+        session["meals_ids"] = meals_ids
+        order.append(d)
+        order_sum += meal.price
 
     if request.method == 'GET':
-        meals = [db.session.
-                 query(Meal).
-                 get(int(item))
-                 for item in items]
-        for meal in meals:
-            meals_ids = session.get("meals_ids", [])
-            d = {'title': meal.title,
-                 'price': meal.price,
-                 'meal_id': meal.id
-                 }
-            meals_ids.append(meal.id)
-            session["meals_ids"] = meals_ids
-            order.append(d)
-            order_sum += meal.price
         session['order_sum'] = order_sum
         return render_template('cart.html',
                                meals_ids=items,
@@ -107,41 +113,52 @@ def remove_item(item_id):
 @app.route('/account/', methods=['GET', 'POST'])
 def show_account():
     if session.get('name'):
-        user = User.query.filter_by(email=session['email'])
+        user = User.query.filter_by(email=session['email']).first()
         user.name = session['name']
         user.address = session['address']
         user.phone = session['phone']
 
         meals_ids: List[str] = session.get("meals_ids", [])
-        meals: List[Meal]
-        order_date: str = datetime.now().strftime('%Y-%m-%d')
+        order_date: datetime = datetime.now()
 
-        # Forming the order list
-        meals = [Meal.query.get(int(meal_id))
-                 for meal_id in meals_ids]
+       
 
         order = Order(order_date=order_date,
                       order_sum=session['order_sum'],
-                      user_id=user.id,
-                      user=user,
-                      meals=meals)
+                      user_id=user.id)
+        
+        # Forming the order list
+        for meal_id in meals_ids:    
+            order.meals.append(
+                Meal.query.get(
+                    int(meal_id)
+                    )
+                )
+                 
+        # Adding the order
+        user.orders.append(order)
+                      
         db.session.add(order)
         db.session.commit()
+        
+        # Removing session name for preventing writing 
+        # order twice
+        session.pop('name')
 
-    orders_list: List[Dict[str, Any]]
+    orders_list: List[Dict[str, Any]] = []
     orders = Order.query.all()
     for o in orders:
-        meals_dict: List[Dict[str, Any]] = [
+        meals_list: List[Dict[str, Any]] = [
             {
                 'title': meal.title,
                 'price': meal.price,
             }
-            for meal in order.meals
+            for meal in o.meals
         ]
         order_item: Dict[str, Any] = {
-            'order_date': o.order_date,
+            'order_date': o.order_date.strftime('%Y-%m-%d'),
             'order_sum': o.order_sum,
-            'meals': meals_dict,
+            'meals': meals_list,
         }
         orders_list.append(order_item)
     return render_template('account.html',

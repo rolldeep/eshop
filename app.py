@@ -6,7 +6,7 @@ from flask_migrate import Migrate
 
 from config import Config
 from forms import LoginForm, OrderForm, RegisterForm
-from models import Category, Meal, User, db, Order
+from models import Category, Meal, User, db, Order, orders_meals
 
 app = Flask(__name__)
 db.init_app(app)
@@ -36,25 +36,25 @@ def show_cart():
     items = session.get("cart", [])
     is_removed = session.get("is_removed", False)
     is_auth = session.get("is_auth", False)
-    
+
     # show message if item is removed
     session['is_removed'] = False
-    
+
     # Orders to show
     order: List[dict] = []
     order_sum = 0
-    
+
     # Getting the meals from db
     meals = [db.session.
-                    query(Meal).
-                    get(int(item))
-                    for item in items]
+             query(Meal).
+             get(int(item))
+             for item in items]
     for meal in meals:
         meals_ids = session.get("meals_ids", [])
         d = {'title': meal.title,
-                'price': meal.price,
-                'meal_id': meal.id
-                }
+             'price': meal.price,
+             'meal_id': meal.id
+             }
         meals_ids.append(meal.id)
         session["meals_ids"] = meals_ids
         order.append(d)
@@ -118,28 +118,32 @@ def show_account():
         user.address = session['address']
         user.phone = session['phone']
         meals_ids: List[str] = session.get("meals_ids", [])
-        
-        order_date: datetime = datetime.now()      
+
+        order_date: datetime = datetime.now()
         order = Order(order_date=order_date,
                       order_sum=session['order_sum'],
                       user_id=user.id)
-        
-        meals_ids_set = meals_ids
+
         # Forming the order list
-        for meal_id in meals_ids_set:    
-            order.meals.append(
-                Meal.query.get(
-                    int(meal_id)
+        for meal_id in meals_ids:
+            order_item = db.session.query(orders_meals).\
+                filter(orders_meals.meal_id == meal_id).first()
+            if order_item:
+                order_item.qnt += 1
+            else:
+                order.meals.append(
+                    Meal.query.get(
+                        int(meal_id)
                     )
                 )
-                 
+
         # Adding the order
         user.orders.append(order)
-                      
+
         # db.session.add(order)
         db.session.commit()
-        
-        # Removing session name for preventing writing 
+
+        # Removing session name for preventing writing
         # order twice
         session.pop('name')
 

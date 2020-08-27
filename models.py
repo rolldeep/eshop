@@ -14,8 +14,7 @@ orders_meals = db.Table(
               db.ForeignKey('orders.id'),
               primary_key=True),
     db.Column('qnt',
-              db.Integer,
-              autoincrement=True)
+              db.Integer)
 )
 
 

@@ -124,7 +124,7 @@ def show_account():
                       order_sum=session['order_sum'],
                       user_id=user.id)
         
-        meals_ids_set = set(meals_ids)
+        meals_ids_set = meals_ids
         # Forming the order list
         for meal_id in meals_ids_set:    
             order.meals.append(

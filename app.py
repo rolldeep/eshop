@@ -117,18 +117,16 @@ def show_account():
         user.name = session['name']
         user.address = session['address']
         user.phone = session['phone']
-
         meals_ids: List[str] = session.get("meals_ids", [])
-        order_date: datetime = datetime.now()
-
-       
-
+        
+        order_date: datetime = datetime.now()      
         order = Order(order_date=order_date,
                       order_sum=session['order_sum'],
                       user_id=user.id)
         
+        meals_ids_set = set(meals_ids)
         # Forming the order list
-        for meal_id in meals_ids:    
+        for meal_id in meals_ids_set:    
             order.meals.append(
                 Meal.query.get(
                     int(meal_id)
@@ -138,7 +136,7 @@ def show_account():
         # Adding the order
         user.orders.append(order)
                       
-        db.session.add(order)
+        # db.session.add(order)
         db.session.commit()
         
         # Removing session name for preventing writing 

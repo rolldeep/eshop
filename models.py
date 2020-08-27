@@ -12,7 +12,10 @@ orders_meals = db.Table(
     db.Column('meal_id',
               db.Integer,
               db.ForeignKey('orders.id'),
-              primary_key=True)
+              primary_key=True),
+    db.Column('qty',
+              db.Integer,
+              autoincrement=True)
 )
 
 
@@ -25,7 +28,7 @@ class User(db.Model):
     password_hash = db.Column(db.String(1000), nullable=False)
     address = db.Column(db.String(1000))
 
-    orders = db.relationship('Order')
+    orders = db.relationship('Order', back_populates='orders')
 
     @property
     def password(self):
@@ -75,7 +78,7 @@ class Order(db.Model):
     order_sum = db.Column(db.Float, nullable=False)
 
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    user = db.relationship('User')
+    user = db.relationship('User', back_populates='user')
     meals = db.relationship('Meal',
                             secondary=orders_meals,
                             back_populates='orders'
